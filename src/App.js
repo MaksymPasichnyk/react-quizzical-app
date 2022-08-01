@@ -1,6 +1,6 @@
-import Quiz from './Quiz';
-import Settings from './Settings';
-import IntroPage from './Intro-page';
+import Quiz from './components/Quiz';
+import Settings from './components/Settings';
+import IntroPage from './components/Intro-page';
 import React from 'react';
 //import { nanoid } from 'nanoid';
 
