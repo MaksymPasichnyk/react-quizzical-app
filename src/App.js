@@ -1,79 +1,114 @@
-import Quiz from './components/Quiz';
-import Settings from './components/Settings';
-import IntroPage from './components/Intro-page';
-import React from 'react';
+import Quiz from "./components/Quiz";
+import Settings from "./components/Settings";
+import IntroPage from "./components/Intro-page";
+import React from "react";
 //import { nanoid } from 'nanoid';
 
 export default function App() {
-	
-	const storage = window.localStorage;
-	const defaultQuiz = {
-		questionNumber: 10,
-		category: '9',
-		difficulty: 'easy',
-		type: "multiple",
-	}
+  const storage = window.localStorage;
+  const initialQuizSetup = {
+    amount: 10,
+    category: "any",
+    difficulty: "any",
+    type: "any",
+  };
 
-	const [quiz, setQuizSetup] = React.useState(storage.getItem('quiz') ? JSON.parse(storage.getItem('quiz')) : defaultQuiz);
-	const [isQuiz, setQuiz] = React.useState(false);
-	const [isSettings, setIsSettings] = React.useState(false);
-	const [questions, setQuestions] = React.useState([]);
-	const [userToken, setUserToken] = React.useState(null);
+  const [quizSetup, setQuizSetup] = React.useState(
+    storage.getItem("quiz")
+      ? JSON.parse(storage.getItem("quiz"))
+      : initialQuizSetup
+  );
 
-	const fetchQuizData = async ({questionNumber, category, difficulty, type}) => {
-		const response = await fetch(`https://opentdb.com/api.php?amount=${questionNumber}&category=${category}&difficulty=${difficulty}&type=${type}`);
-		const quiz = await response.json();
-		setQuestions(quiz.results)
-	}
+  const [displayQuiz, setDisplayQuiz] = React.useState(false);
+  const [displaySettings, setDisplaySettings] = React.useState(false);
+  const [questions, setQuestions] = React.useState([]);
+  const [message, setMessage] = React.useState();
 
-	const fetchUserToken = async () => {
-		const response = await fetch('https://opentdb.com/api_token.php?command=request');
-		const data = await response.json();
-		setUserToken(data.token);
-	}
+	console.log(message)
+  console.log(questions);
+  const fetchQuizData = async () => {
+    let url = `https://opentdb.com/api.php?`;
 
+    for (let item in quizSetup) {
+      if (quizSetup[item] !== "any") {
+        url = url + `${item}=${quizSetup[item]}&`;
+      }
+    }
 
-	React.useEffect( () => {
+    //const response = await fetch(url);
+    //const quiz = await response.json();
+    //setQuestions(quiz.results);
+    fetch(url)
+      .then((response) => {
+        if (response.ok) return response.json();
+        throw response;
+      })
+      .then((data) => {
+        if (data.response_code === 1) {
+          setMessage(
+            `No Results. Could not find any appropriate questins. 
+						(Ex. Asking for 50 Questions in a Category that only has 20.) 
+						Change your settings and try again`
+          );
+        } else {
+					setMessage('')
+				}
 
-		fetchQuizData(quiz)
-		fetchUserToken();
+        setQuestions(data.results);
+      });
+  };
 
+  React.useEffect(() => {
+    fetchQuizData(quizSetup);
+  }, [quizSetup]);
 
-	}, [quiz]);
+  function buildQuiz() {
+    setDisplayQuiz(true);
+    //fetchQuizData(quizSetup);
+  }
 
-	function buildQuiz() {
-		setQuiz(true);
-		fetchQuizData(quiz);
-	};
+  const settingHandlers = {
+    open() {
+      setDisplaySettings(true);
+    },
 
+    close() {
+      setDisplaySettings(false);
+    },
 
+    saveSettings(quizSetup) {
+      storage.setItem("quiz", JSON.stringify(quizSetup));
 
+      console.log(quizSetup);
 
-	const settingsHandler = {
-		open() {
-			setIsSettings(true)
-		},
+      setQuizSetup(quizSetup);
 
-		close() {
-			setIsSettings(false)
-		},
+      setDisplaySettings(false);
+    },
 
-		saveSettings(quiz) {
-			console.log('quiz that came from settings', quiz)
-			storage.setItem('quiz', JSON.stringify(quiz))
+    handleChangeFieldsState(event) {
+      const { name, value } = event.target;
 
-			setQuizSetup(quiz);
+      setQuizSetup((prevQuiz) => ({
+        ...prevQuiz,
+        [name]: value,
+      }));
+    },
+  };
 
-			setIsSettings(false)
-		},
-
-	}
-
-	return(
-		<main className='main'>
-			{isQuiz && < Quiz quiz={quiz} questionsData={questions} />}
-			{(!isQuiz && !isSettings) && <IntroPage buildQuiz={buildQuiz} showSettings={settingsHandler.open} />}
-			{isSettings && <Settings settingsHandler={settingsHandler} storage={storage}  />}
-		</main>
-	)
+  return (
+    <main className="main">
+      {displayQuiz && <Quiz questionsData={questions} />}
+      {!displayQuiz && !displaySettings && (
+        <IntroPage buildQuiz={buildQuiz} showSettings={settingHandlers.open} />
+      )}
+      {displaySettings && (
+        <Settings
+          settingHandlers={settingHandlers}
+          quizSetup={quizSetup}
+          storage={storage}
+        />
+      )}
+    </main>
+  );
 }
