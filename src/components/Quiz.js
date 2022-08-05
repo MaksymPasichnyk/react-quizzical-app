@@ -2,13 +2,55 @@
 import { nanoid } from "nanoid";
 import React from "react";
 import { Grid } from "react-loader-spinner";
+import ActionButton from "./ActionButton";
 
-export default function Quiz({ questionsData }) {
+export default function Quiz({ questionsData, message, closeQuiz }) {
   const [isFinishedQuiz, setIsFinishedQuiz] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [questions, setQuestions] = React.useState(
     getQuestionsWithOptions(questionsData)
   );
+  const [amountOfRigntAnswers, setAmountOfRightAnswers] = React.useState(0);
+  const questionElements = questions.map((question) => {
+    const answerElements = question.answers.map((answer) => {
+      return (
+        <div
+          key={answer.id}
+          className="question__response"
+          style={{
+            backgroundColor: `${
+              (!answer.state && "white") ||
+              (answer.state === "chosen" && "#99a4e3") ||
+              (answer.state === "incorrect" && "red") ||
+              (answer.state === "correct" && "green")
+            }`,
+            color: `${answer.state ? "white" : "black"}`,
+          }}
+          onClick={() => handleOptionClick(question.id, answer.id)}
+        >
+          <span className="question__response-text">
+            {decodeStr(answer.text)}
+          </span>
+        </div>
+      );
+    });
+
+    return (
+      <div className="question" key={question.id}>
+        <h3 className="question__title">{decodeStr(question.text)}</h3>
+        <div className="question__responses">{answerElements}</div>
+      </div>
+    );
+  });
+
+	React.useEffect(() => {
+		if (!questionsData.length) {
+			setLoading(true);
+		} else {
+			setQuestions(getQuestionsWithOptions(questionsData))
+			setLoading(false)
+		}
+	},[questionsData])
 
   function getQuestionsWithOptions(questionsData) {
     return questionsData.map((question) => {
@@ -30,44 +72,6 @@ export default function Quiz({ questionsData }) {
       };
     });
   }
-
-  const questionElements = questions.map((question) => {
-    const answerElements = question.answers.map((answer) => {
-      return (
-        <div
-          key={answer.id}
-          className="question__response"
-          //style={{backgroundColor: `${ answer.isChosen ? '#99a4e3' : 'white'}`}}
-          style={{
-            backgroundColor: `${
-              (!answer.state && "white") ||
-              (answer.state === "chosen" && "#99a4e3") ||
-              (answer.state === "incorrect" && "red") ||
-              (answer.state === "correct" && "green")
-            }`,
-            color: `${answer.state ? "white" : "black"}`,
-          }}
-          onClick={() => chooseAnswer(question.id, answer.id)}
-        >
-          <span className="question__response-text">
-            {decodeStr(answer.text)}
-          </span>
-        </div>
-      );
-    });
-
-    return (
-      <div className="question" key={question.id}>
-        <h3 className="question__title">{decodeStr(question.text)}</h3>
-        <div className="question__responses">
-          {answerElements}
-          {/*<div className='question__response'>
-						<span className='question__response-text'>response</span>
-					</div>*/}
-        </div>
-      </div>
-    );
-  });
 
   function decodeStr(str) {
     const txt = document.createElement("textarea");
@@ -102,25 +106,43 @@ export default function Quiz({ questionsData }) {
   }
 
   function checkAnswers() {
-  		setIsFinishedQuiz(true);
-
-  		setQuestions(prevQuestions => {
-  			return prevQuestions.map(question => {
-  				const answers = question.answers.map(answer => {
-  					if (answer.text === question.correctAnswer) return {...answer, state: 'correct'}
-  					if (answer.state === 'chosen' && answer.text === question.correctAnswer)	return {...answer, state: 'correct'}
-  					if (answer.text !== question.correctAnswer && answer.state === 'chosen') return {...answer, state: 'incorrect'}
-  					return answer
-  				})
-  			return {...question, answers: answers}
-  		})
-  	})
+    setIsFinishedQuiz(true);
+		const newQuestions = questions.map((question) => {
+        const answers = question.answers.map((answer) => {
+					if (answer.state && question.correctAnswer === answer.text) {
+						setAmountOfRightAnswers(prevAmountOfRightAnswers => prevAmountOfRightAnswers + 1)
+					}
+          if (answer.text === question.correctAnswer)
+            return { ...answer, state: "correct" };
+          if (
+            answer.state === "chosen" &&
+            answer.text === question.correctAnswer
+          ) {
+            return { ...answer, state: "correct" };
+          }
+          if (
+            answer.text !== question.correctAnswer &&
+            answer.state === "chosen"
+          )
+            return { ...answer, state: "incorrect" };
+          return answer;
+        });
+        return { ...question, answers: answers };
+      });
+    setQuestions(newQuestions);
   }
 
-	function startNewQuiz() {
-  	setQuestions(getQuestionsWithOptions(questionsData));
-  	setIsFinishedQuiz(false);
+  function startNewQuiz() {
+    setQuestions(getQuestionsWithOptions(questionsData));
+    setIsFinishedQuiz(false);
+		setAmountOfRightAnswers(0);
   }
+
+	function handleOptionClick(questionId, answerId) {
+		if (!isFinishedQuiz) {
+			return chooseAnswer(questionId, answerId)
+		}
+	}
 
   return (
     <>
@@ -128,17 +150,27 @@ export default function Quiz({ questionsData }) {
       {!loading && (
         <form className="quiz">
           {questionElements}
-          {/*<div className='question'>
-					<h3 className='question__title'>test</h3>
-					<div className='question__responses'>
-						<div className='question__response'>
-							<span className='question__response-text'>response</span>
-						</div>
-					</div>
-				</div>*/}
-          <button onClick={isFinishedQuiz ? startNewQuiz : checkAnswers} type="button" className="quiz__btn">{`${
-            isFinishedQuiz ? "Try again" : "Show answers"
-          }`}</button>
+          {message && <p className="no-results-message">{message}</p>}
+          {isFinishedQuiz && (
+            <div className="amount-correct-answers">
+              Quantity correct chosen answers is 
+              <span className="highlight">{amountOfRigntAnswers}</span>
+            </div>
+          )}
+          {!message && (
+            <ActionButton
+              handlerClick={isFinishedQuiz ? startNewQuiz : checkAnswers}
+              text={`${isFinishedQuiz ? "Try again" : "Show answers"}`}
+              type="button"
+              classText="quiz__btn"
+            />
+          )}
+          <ActionButton
+            text="Back to Menu"
+            classText="quiz__btn quiz__btn--secondary"
+            type="button"
+            handlerClick={closeQuiz}
+          />
         </form>
       )}
     </>

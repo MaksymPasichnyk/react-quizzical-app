@@ -2,7 +2,6 @@ import Quiz from "./components/Quiz";
 import Settings from "./components/Settings";
 import IntroPage from "./components/Intro-page";
 import React from "react";
-//import { nanoid } from 'nanoid';
 
 export default function App() {
   const storage = window.localStorage;
@@ -24,8 +23,6 @@ export default function App() {
   const [questions, setQuestions] = React.useState([]);
   const [message, setMessage] = React.useState();
 
-	console.log(message)
-  console.log(questions);
   const fetchQuizData = async () => {
     let url = `https://opentdb.com/api.php?`;
 
@@ -35,9 +32,6 @@ export default function App() {
       }
     }
 
-    //const response = await fetch(url);
-    //const quiz = await response.json();
-    //setQuestions(quiz.results);
     fetch(url)
       .then((response) => {
         if (response.ok) return response.json();
@@ -46,13 +40,12 @@ export default function App() {
       .then((data) => {
         if (data.response_code === 1) {
           setMessage(
-            `No Results. Could not find any appropriate questins. 
-						(Ex. Asking for 50 Questions in a Category that only has 20.) 
+            `No Results. Could not find any appropriate questins.  
 						Change your settings and try again`
           );
         } else {
-					setMessage('')
-				}
+          setMessage("");
+        }
 
         setQuestions(data.results);
       });
@@ -64,7 +57,10 @@ export default function App() {
 
   function buildQuiz() {
     setDisplayQuiz(true);
-    //fetchQuizData(quizSetup);
+  }
+
+  function closeQuiz() {
+    setDisplayQuiz(false);
   }
 
   const settingHandlers = {
@@ -78,11 +74,7 @@ export default function App() {
 
     saveSettings(quizSetup) {
       storage.setItem("quiz", JSON.stringify(quizSetup));
-
-      console.log(quizSetup);
-
       setQuizSetup(quizSetup);
-
       setDisplaySettings(false);
     },
 
@@ -98,9 +90,17 @@ export default function App() {
 
   return (
     <main className="main">
-      {displayQuiz && <Quiz questionsData={questions} />}
+      {displayQuiz && (
+        <Quiz
+          questionsData={questions}
+          message={message}
+          closeQuiz={closeQuiz}
+        />
+      )}
       {!displayQuiz && !displaySettings && (
-        <IntroPage buildQuiz={buildQuiz} showSettings={settingHandlers.open} />
+        <IntroPage 
+					buildQuiz={buildQuiz} 
+					showSettings={settingHandlers.open} />
       )}
       {displaySettings && (
         <Settings

@@ -15,6 +15,7 @@ body {
 	margin: 0;
 	padding: 0;
 	font-size: inherit;
+	color: #293264;
 }
 
 .main {
@@ -117,10 +118,19 @@ body {
 	margin: 20px auto;
 	display: block;
 	cursor: pointer;
+	transition: opacity .3s;
+}
+
+.quiz__btn--secondary {
+	background: #293264;
 }
 
 .quiz__btn:active {
 	background: #36458e;
+}
+
+.quiz__btn:hover {
+	opacity: 0.7;
 }
 
 /* SETTINGS FORM */
@@ -142,6 +152,10 @@ body {
 	text-align: left;
 	display: flex;
 	flex-wrap: wrap;
+}
+
+.settings-form__field:last-of-type {
+	justify-content: center;
 }
 
 .settings-form__subtitle {
@@ -197,11 +211,28 @@ select.round:focus {
 }
 
 .settings-form__btn {
-	margin: 10px;
+	margin: 5px;
 	width: 44%;
 	height: 40px;
 }
 
 .settings-form__btn--cancel {
 	background: #c15050;
+}
+
+.no-results-message {
+	font-size: 2rem;
+	text-align: center;
+	color: inherit;
+}
+
+.amount-correct-answers {
+	font-size: 1.5rem;
+	margin: 20px;
+	text-align: center;
+}
+
+.amount-correct-answers .highlight {
+	color: green;
+	padding-left: 3px;
 }
