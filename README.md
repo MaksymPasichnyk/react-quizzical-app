@@ -1,1 +1,1 @@
-[# Desc](https://quizzical-appli.netlify.app/)
+[# Quizzical-app](https://quizzical-appli.netlify.app/)
